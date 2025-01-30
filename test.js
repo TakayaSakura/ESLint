@@ -1,7 +1,5 @@
-// これはエラーを検出するはず
-const dangerousRegex = /(1*)*/;
+const Regex1 = /(a+)+/;
+const Regex2 = /abc/;
 
-// これは安全なはず
-const safeRegex = /[a-z]+/;
-
-const dangerousRegx = /(1*)*/;
+console.log(Regex1);
+console.log(Regex2);

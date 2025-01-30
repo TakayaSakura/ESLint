@@ -5,16 +5,14 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description:
-        "Detect potentially dangerous regular expressions that might cause ReDoS",
-      category: "Possible Errors",
+      description: "",
+      category: "",
       recommended: true,
     },
     fixable: null,
     schema: [],
   },
   create(context) {
-    // ユーティリティ関数
     function removeLastDigit(regexStr) {
       const lastChar = regexStr[regexStr.length - 1];
       if (/\d/.test(lastChar)) {
@@ -95,7 +93,6 @@ export default {
             );
           }
         }
-        // 他のDisjunctionケースの処理も同様に実装
       }
 
       // Repetitionの処理
@@ -126,7 +123,6 @@ export default {
             ]
           );
         }
-        // 他のRepetitionケースの処理も同様に実装
       }
 
       traverse(ast, {
@@ -146,7 +142,6 @@ export default {
         },
       });
 
-      // 強連結成分の確認（簡略化バージョン）
       return automatonArray.length >= 4;
     }
 
@@ -162,13 +157,10 @@ export default {
             if (hasIDA || hasEDA) {
               context.report({
                 node,
-                message:
-                  "Potentially dangerous regular expression detected: might cause ReDoS",
+                message: "might cause ReDoS",
               });
             }
-          } catch (error) {
-            // 正規表現のパースエラーは無視
-          }
+          } catch (error) {}
         }
       },
       NewExpression(node) {
@@ -182,8 +174,7 @@ export default {
             if (hasIDA || hasEDA) {
               context.report({
                 node,
-                message:
-                  "Potentially dangerous regular expression detected: might cause ReDoS",
+                message: "might cause ReDoS",
               });
             }
           } catch (error) {

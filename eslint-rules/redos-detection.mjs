@@ -101,7 +101,7 @@ export default {
           break;
         }
       }
-      console.log("/" + regexStr.slice(count + 1));
+      // console.log("/" + regexStr.slice(count + 1));
       return "/" + regexStr.slice(count + 1);
     }
     function checkIDA(ast) {
@@ -132,6 +132,7 @@ export default {
       let foundRepetition = false;
       let disjunctionNode = null;
       let repetitionNode = null;
+      let found3Disjnction = false;
 
       // Disjunctionの処理
       function Disjunction(Node) {
@@ -164,6 +165,7 @@ export default {
                 Number(Node.left.expression.value),
               ]
             );
+            // console.log("同値**");
           } else {
             //左右が同値でない場合
             automatonArray.push(
@@ -178,7 +180,7 @@ export default {
                 Number(Node.right.expression.value),
               ]
             );
-            // console.log("right");
+            // console.log("異値*");
           }
         } else if (Node.left.type === "Repetition") {
           //左に"*"がかかっている場合
@@ -194,7 +196,7 @@ export default {
                 Number(Node.left.expression.value),
               ]
             );
-            // console.log("right");
+            // console.log("同値左*");
           } else {
             //左右が同値でない場合
             automatonArray.push(
@@ -205,6 +207,7 @@ export default {
                 Number(Node.left.expression.value),
               ]
             );
+            // console.log("異値左*");
           }
         } else if (Node.right.type === "Repetition") {
           //右に"*"がかかっている場合
@@ -220,6 +223,7 @@ export default {
                 Number(Node.right.expression.value) + 1000000,
               ]
             );
+            // console.log("同値右*");
           } else {
             //左右が同値でない場合
             automatonArray.push(
@@ -230,6 +234,7 @@ export default {
                 Number(Node.right.expression.value),
               ]
             );
+            // console.log("異値右*");
           }
         } else {
           //ノーマルの場合
@@ -239,96 +244,124 @@ export default {
               [0, Number(Node.left.value)],
               [0, Number(Node.right.value) + 1000000]
             );
+            // console.log("同値");
           } else {
             //左右が同値でない場合
             automatonArray.push(
               [0, Number(Node.left.value)],
               [0, Number(Node.right.value)]
             );
+            // console.log("異値");
           }
         }
-        console.log(automatonArray);
+        // console.log(automatonArray);
       }
 
-      function Repetition(Node) {
+      function Repetition(RNode) {
         if (
-          //これ以降のDisjunctionの確認方法はGroupになってる
-          Node.expression.type === "Group" &&
-          Node.expression.expression.type === "Repetition"
+          RNode.expression.expression.left.left &&
+          RNode.expression.expression.left.right &&
+          RNode.expression.expression.right
         ) {
-          //"*"がネストしている場合
-          let Node2 = Node.expression.expression;
-          automatonArray.push(
-            [0, Number(Node2.expression.value)],
-            [0, Number(Node2.expression.value) + 1000000],
-            [Number(Node2.expression.value), Number(Node2.expression.value)],
-            [
-              Number(Node2.expression.value) + 1000000,
-              Number(Node2.expression.value) + 1000000,
-            ],
-            [
-              Number(Node2.expression.value),
-              Number(Node2.expression.value) + 1000000,
-            ],
-            [
-              Number(Node2.expression.value) + 1000000,
-              Number(Node2.expression.value),
-            ]
-          );
-          console.log(automatonArray);
-        } else if (
-          //"*"が"|"にかかっているかつ中身の左右が同値の場合
-          Node.expression.type === "Group" &&
-          Node.expression.expression.left.value ===
-            Node.expression.expression.right.value
-        ) {
-          automatonArray.push(
-            [0, Number(Node.expression.expression.left.value)],
-            [0, Number(Node.expression.expression.right.value) + 1000000],
-            [
-              Number(Node.expression.expression.left.value),
-              Number(Node.expression.expression.left.value),
-            ],
-            [
-              Number(Node.expression.expression.right.value) + 1000000,
-              Number(Node.expression.expression.right.value) + 1000000,
-            ],
-            [
-              Number(Node.expression.expression.left.value),
-              Number(Node.expression.expression.right.value) + 1000000,
-            ],
-            [
-              Number(Node.expression.expression.right.value) + 1000000,
-              Number(Node.expression.expression.left.value),
-            ]
-          );
-        } else if (Node.expression.type === "Group") {
-          //"*"が"|"にかかっている場合
-          automatonArray.push(
-            [0, Number(Node.expression.expression.left.value)],
-            [0, Number(Node.expression.expression.right.value)],
-            [
-              Number(Node.expression.expression.left.value),
-              Number(Node.expression.expression.left.value),
-            ],
-            [
-              Number(Node.expression.expression.right.value),
-              Number(Node.expression.expression.right.value),
-            ]
-          );
+          if (
+            RNode.expression.expression.left.left.value ==
+              RNode.expression.expression.left.right.value ||
+            RNode.expression.expression.left.right.value ==
+              RNode.expression.expression.right.value ||
+            RNode.expression.expression.right.value ==
+              RNode.expression.expression.left.left.value
+          ) {
+            found3Disjnction = true;
+          } else {
+            TwoDisjunction(RNode);
+          }
         } else {
-          //"*"単体の場合
-          automatonArray.push(
-            [0, Number(Node.expression.value)],
-            [Number(Node.expression.value), Number(Node.expression.value)]
-          );
+          TwoDisjunction(RNode);
         }
-        console.log(automatonArray);
+        function TwoDisjunction(Node) {
+          if (
+            //これ以降のDisjunctionの確認方法はGroupになってる
+            Node.expression.type === "Group" &&
+            Node.expression.expression.type === "Repetition"
+          ) {
+            //"*"がネストしている場合
+            let Node2 = Node.expression.expression;
+            automatonArray.push(
+              [0, Number(Node2.expression.value)],
+              [0, Number(Node2.expression.value) + 1000000],
+              [Number(Node2.expression.value), Number(Node2.expression.value)],
+              [
+                Number(Node2.expression.value) + 1000000,
+                Number(Node2.expression.value) + 1000000,
+              ],
+              [
+                Number(Node2.expression.value),
+                Number(Node2.expression.value) + 1000000,
+              ],
+              [
+                Number(Node2.expression.value) + 1000000,
+                Number(Node2.expression.value),
+              ]
+            );
+            // console.log("2重ネスト");
+            // console.log(automatonArray);
+          } else if (
+            //"*"が"|"にかかっているかつ中身の左右が同値の場合
+            Node.expression.type === "Group" &&
+            Node.expression.expression.left.value ===
+              Node.expression.expression.right.value
+          ) {
+            automatonArray.push(
+              [0, Number(Node.expression.expression.left.value)],
+              [0, Number(Node.expression.expression.right.value) + 1000000],
+              [
+                Number(Node.expression.expression.left.value),
+                Number(Node.expression.expression.left.value),
+              ],
+              [
+                Number(Node.expression.expression.right.value) + 1000000,
+                Number(Node.expression.expression.right.value) + 1000000,
+              ],
+              [
+                Number(Node.expression.expression.left.value),
+                Number(Node.expression.expression.right.value) + 1000000,
+              ],
+              [
+                Number(Node.expression.expression.right.value) + 1000000,
+                Number(Node.expression.expression.left.value),
+              ]
+            );
+            // console.log("同値|*");
+            // console.log(automatonArray);
+          } else if (Node.expression.type === "Group") {
+            //"*"が"|"にかかっている場合
+            automatonArray.push(
+              [0, Number(Node.expression.expression.left.value)],
+              [0, Number(Node.expression.expression.right.value)],
+              [
+                Number(Node.expression.expression.left.value),
+                Number(Node.expression.expression.left.value),
+              ],
+              [
+                Number(Node.expression.expression.right.value),
+                Number(Node.expression.expression.right.value),
+              ]
+            );
+            // console.log("異値|*");
+          } else {
+            //"*"単体の場合
+            automatonArray.push(
+              [0, Number(Node.expression.value)],
+              [Number(Node.expression.value), Number(Node.expression.value)]
+            );
+          }
+          // console.log("単体*");
+          // console.log(automatonArray);
+        }
       }
-
       traverse(ast, {
         Disjunction(path) {
-          // console.log("Found Disjunction");
+          // console.log("disjunction");
           if (!foundDisjunction && !foundRepetition) {
             foundDisjunction = true;
             disjunctionNode = path.node;
@@ -336,7 +369,7 @@ export default {
           }
         },
         Repetition(path) {
-          // console.log("Found Repetition");
+          // console.log("repetition");
           if (!foundRepetition && !foundDisjunction) {
             foundRepetition = true;
             repetitionNode = path.node;
@@ -345,7 +378,35 @@ export default {
         },
       });
 
-      return automatonArray.length >= 4;
+      // console.log(automatonArray);
+      // let automatonArrayStr = JSON.stringify(automatonArray);
+      // automatonArrayStr = automatonArrayStr.slice(1, -1);
+      // automatonArrayStr = automatonArrayStr.replaceAll("[", "(");
+      // automatonArrayStr = automatonArrayStr.replaceAll("]", ")");
+      // automatonArrayStr = "[" + automatonArrayStr + "]";
+      // console.log(automatonArrayStr);
+
+      function checkPaths(arr) {
+        let selfLoopCount = 0;
+        const pairs = new Set();
+
+        for (const [from, to] of arr) {
+          if (from === to) {
+            selfLoopCount++;
+          } else {
+            pairs.add(`${from}-${to}`);
+          }
+        }
+
+        return (
+          selfLoopCount >= 2 &&
+          [...pairs].some((p) => {
+            const [a, b] = p.split("-");
+            return pairs.has(`${b}-${a}`);
+          })
+        );
+      }
+      return checkPaths(automatonArray) || found3Disjnction;
     }
 
     return {
@@ -358,25 +419,6 @@ export default {
             const ast = parse(regexStr);
             const hasIDA = checkIDA(ast);
             const hasEDA = checkEDA(ast);
-
-            if (hasIDA || hasEDA) {
-              context.report({
-                node,
-                message: "might cause ReDoS",
-              });
-            }
-          } catch (error) {}
-        }
-      },
-      NewExpression(node) {
-        if (node.callee.name === "RegExp" && node.arguments.length > 0) {
-          const regexStr1 = removeLastDigit(node.arguments[0].value);
-          const regexStr = removeFirstDigit(regexStr1);
-          try {
-            const ast = parse(regexStr);
-            const hasIDA = checkIDA(ast);
-            const hasEDA = checkEDA(ast);
-
             if (hasIDA || hasEDA) {
               context.report({
                 node,

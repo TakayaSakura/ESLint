@@ -1,5 +1,3 @@
-const Regex2 = /(a+)+/;
-const Regex1 = /((a|a)*)*/;
+const Regex = /(a|a)*/;
 
-// console.log(Regex1);
-// console.log(Regex2);
+// console.log(Regex);
